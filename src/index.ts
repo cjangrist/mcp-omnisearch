@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
+import { HttpTransport } from '@tmcp/transport-http';
 import { StdioTransport } from '@tmcp/transport-stdio';
 import { McpServer } from 'tmcp';
+import { serve } from 'srvx';
 import type { GenericSchema } from 'valibot';
 import { validate_config } from './config/env.js';
 import { initialize_providers } from './providers/index.js';
@@ -59,9 +61,68 @@ class OmnisearchServer {
 	}
 
 	async run() {
-		const transport = new StdioTransport(this.server);
-		transport.listen();
-		console.error('Omnisearch MCP server running on stdio');
+		const port = process.env.PORT
+			? parseInt(process.env.PORT, 10)
+			: undefined;
+
+		if (port) {
+			const transport = new HttpTransport(this.server, {
+				path: '/mcp',
+				cors: true,
+			});
+
+			await serve({
+				port,
+				hostname: '0.0.0.0',
+				async fetch(request) {
+					const start = performance.now();
+					const method = request.method;
+					const url = new URL(request.url);
+					const path = url.pathname;
+
+					let body_preview = '';
+					if (method === 'POST') {
+						const cloned = request.clone();
+						const raw = await cloned.text();
+						try {
+							const parsed = JSON.parse(raw);
+							const rpc_method = parsed.method ?? '?';
+							const tool_name = parsed.params?.name ?? '';
+							const query = parsed.params?.arguments?.query ?? '';
+							body_preview = tool_name
+								? `${rpc_method} → ${tool_name}${query ? `("${query.slice(0, 80)}")` : ''}`
+								: rpc_method;
+						} catch {
+							body_preview = raw.slice(0, 100);
+						}
+					}
+
+					console.error(
+						`→ ${method} ${path}${body_preview ? ` | ${body_preview}` : ''}`,
+					);
+
+					const response = await transport.respond(request);
+					const status = response?.status ?? 404;
+					const elapsed = (performance.now() - start).toFixed(0);
+
+					console.error(
+						`← ${status} ${elapsed}ms | ${method} ${path}${body_preview ? ` | ${body_preview}` : ''}`,
+					);
+
+					return (
+						response ?? new Response('Not found', { status: 404 })
+					);
+				},
+			});
+
+			console.error(
+				`Omnisearch MCP server running on http://0.0.0.0:${port}/mcp`,
+			);
+		} else {
+			const transport = new StdioTransport(this.server);
+			transport.listen();
+			console.error('Omnisearch MCP server running on stdio');
+		}
 	}
 }
 
