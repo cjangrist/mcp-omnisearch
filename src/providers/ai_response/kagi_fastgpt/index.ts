@@ -4,7 +4,10 @@ import {
 	SearchProvider,
 	SearchResult,
 } from '../../../common/types.js';
-import { validate_api_key } from '../../../common/utils.js';
+import {
+	handle_provider_error,
+	validate_api_key,
+} from '../../../common/utils.js';
 import { config } from '../../../config/env.js';
 
 export interface KagiFastGPTResponse {
@@ -111,11 +114,11 @@ export class KagiFastGPTProvider implements SearchProvider {
 					),
 				},
 			);
-		} catch (error: unknown) {
-			const error_message =
-				error instanceof Error ? error.message : String(error);
-			throw new Error(
-				`Failed to get Kagi FastGPT answer: ${error_message}`,
+		} catch (error) {
+			handle_provider_error(
+				error,
+				this.name,
+				'fetch Kagi FastGPT answer',
 			);
 		}
 	}

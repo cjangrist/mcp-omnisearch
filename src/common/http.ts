@@ -14,7 +14,7 @@ const tryParseJson = (text: string) => {
 	}
 };
 
-export const http_json = async <T = any>(
+export const http_json = async <T = unknown>(
 	provider: string,
 	url: string,
 	options: HttpJsonOptions = {},
@@ -29,10 +29,14 @@ export const http_json = async <T = any>(
 			options.expectedStatuses.includes(res.status));
 
 	if (!okOrExpected) {
-		const message =
+		const raw_message =
 			(body && (body.message || body.error || body.detail)) ||
 			raw ||
 			res.statusText;
+		const message =
+			typeof raw_message === 'string'
+				? raw_message
+				: JSON.stringify(raw_message);
 
 		switch (res.status) {
 			case 401:
@@ -65,6 +69,6 @@ export const http_json = async <T = any>(
 		}
 	}
 
-	// Prefer JSON if parseable, otherwise return as any
+	// Prefer JSON if parseable, otherwise return raw text
 	return (body as T) ?? (raw as unknown as T);
 };

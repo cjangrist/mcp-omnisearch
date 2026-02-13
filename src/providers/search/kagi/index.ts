@@ -9,7 +9,6 @@ import {
 	build_query_with_operators,
 	handle_provider_error,
 	parse_search_operators,
-	retry_with_backoff,
 	validate_api_key,
 } from '../../../common/utils.js';
 import { config } from '../../../config/env.js';
@@ -42,70 +41,62 @@ export class KagiSearchProvider implements SearchProvider {
 		const parsed_query = parse_search_operators(params.query);
 		const search_params = apply_search_operators(parsed_query);
 
-		const search_request = async () => {
-			try {
-				// Build query with all operators using shared utility
-				// Exclude file_type and dates since Kagi handles them as query params
-				const query = build_query_with_operators(
-					search_params,
-					params.include_domains,
-					params.exclude_domains,
-					{ exclude_file_type: true, exclude_dates: true },
-				);
+		try {
+			// Build query with all operators using shared utility
+			// Exclude file_type and dates since Kagi handles them as query params
+			const query = build_query_with_operators(
+				search_params,
+				params.include_domains,
+				params.exclude_domains,
+				{ exclude_file_type: true, exclude_dates: true },
+			);
 
-				const query_params = new URLSearchParams({
-					q: query,
-					limit: (params.limit ?? 10).toString(),
-				});
+			const query_params = new URLSearchParams({
+				q: query,
+				limit: (params.limit ?? 10).toString(),
+			});
 
-				// Add file type as query parameter (Kagi-specific)
-				if (search_params.file_type) {
-					query_params.append('file_type', search_params.file_type);
-				}
-
-				// Add time range as query parameter (Kagi-specific)
-				if (search_params.date_before || search_params.date_after) {
-					const time_range: string[] = [];
-					if (search_params.date_after) {
-						time_range.push(`after:${search_params.date_after}`);
-					}
-					if (search_params.date_before) {
-						time_range.push(`before:${search_params.date_before}`);
-					}
-					query_params.append('time_range', time_range.join(','));
-				}
-
-				const data = await http_json<
-					KagiSearchResponse & { message?: string }
-				>(
-					this.name,
-					`${config.search.kagi.base_url}/search?${query_params}`,
-					{
-						method: 'GET',
-						headers: {
-							Authorization: `Bot ${api_key}`,
-							Accept: 'application/json',
-						},
-						signal: AbortSignal.timeout(config.search.kagi.timeout),
-					},
-				);
-
-				return (data.data || []).map((result) => ({
-					title: result.title,
-					url: result.url,
-					snippet: result.snippet,
-					score: result.rank,
-					source_provider: this.name,
-				}));
-			} catch (error) {
-				handle_provider_error(
-					error,
-					this.name,
-					'fetch search results',
-				);
+			// Add file type as query parameter (Kagi-specific)
+			if (search_params.file_type) {
+				query_params.append('file_type', search_params.file_type);
 			}
-		};
 
-		return retry_with_backoff(search_request);
+			// Add time range as query parameter (Kagi-specific)
+			if (search_params.date_before || search_params.date_after) {
+				const time_range: string[] = [];
+				if (search_params.date_after) {
+					time_range.push(`after:${search_params.date_after}`);
+				}
+				if (search_params.date_before) {
+					time_range.push(`before:${search_params.date_before}`);
+				}
+				query_params.append('time_range', time_range.join(','));
+			}
+
+			const data = await http_json<
+				KagiSearchResponse & { message?: string }
+			>(
+				this.name,
+				`${config.search.kagi.base_url}/search?${query_params}`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: `Bot ${api_key}`,
+						Accept: 'application/json',
+					},
+					signal: AbortSignal.timeout(config.search.kagi.timeout),
+				},
+			);
+
+			return (data.data || []).map((result) => ({
+				title: result.title,
+				url: result.url,
+				snippet: result.snippet,
+				score: result.rank,
+				source_provider: this.name,
+			}));
+		} catch (error) {
+			handle_provider_error(error, this.name, 'fetch search results');
+		}
 	}
 }

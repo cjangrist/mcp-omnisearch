@@ -63,8 +63,10 @@
 	},
 	"dependencies": {
 		"@tmcp/adapter-valibot": "^0.1.5",
+		"@tmcp/transport-http": "^0.8.4",
 		"@tmcp/transport-stdio": "^0.4.1",
 		"octokit": "^5.0.5",
+		"srvx": "^0.11.4",
 		"tmcp": "^1.19.0",
 		"valibot": "^1.2.0"
 	}

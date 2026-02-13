@@ -5,14 +5,24 @@ import {
 	SearchProvider,
 	SearchResult,
 } from '../../common/types.js';
+import { BraveAnswerProvider } from '../ai_response/brave_answer/index.js';
 import { ExaAnswerProvider } from '../ai_response/exa_answer/index.js';
+import { GeminiProvider } from '../ai_response/gemini/index.js';
 import { KagiFastGPTProvider } from '../ai_response/kagi_fastgpt/index.js';
 import { PerplexityProvider } from '../ai_response/perplexity/index.js';
+import { TavilyAnswerProvider } from '../ai_response/tavily_answer/index.js';
+import { SerpApiAnswerProvider } from '../ai_response/serpapi_answer/index.js';
+import { YouSearchProvider } from '../ai_response/you_search/index.js';
 
 export type AISearchProvider =
 	| 'perplexity'
 	| 'kagi_fastgpt'
-	| 'exa_answer';
+	| 'exa_answer'
+	| 'brave_answer'
+	| 'tavily_answer'
+	| 'you_search'
+	| 'serpapi_answer'
+	| 'gemini';
 
 export interface UnifiedAISearchParams extends BaseSearchParams {
 	provider: AISearchProvider;
@@ -21,7 +31,7 @@ export interface UnifiedAISearchParams extends BaseSearchParams {
 export class UnifiedAISearchProvider implements SearchProvider {
 	name = 'ai_search';
 	description =
-		'AI-powered search with reasoning. Supports perplexity (real-time + reasoning), kagi_fastgpt (quick answers), exa_answer (semantic AI).';
+		'AI-powered search with reasoning. Supports perplexity, kagi_fastgpt, exa_answer, brave_answer, tavily_answer, you_search, serpapi_answer (Google AI Overview), gemini (Gemini Flash + Google Search grounding).';
 
 	private providers: Map<AISearchProvider, SearchProvider> =
 		new Map();
@@ -30,6 +40,11 @@ export class UnifiedAISearchProvider implements SearchProvider {
 		this.providers.set('perplexity', new PerplexityProvider());
 		this.providers.set('kagi_fastgpt', new KagiFastGPTProvider());
 		this.providers.set('exa_answer', new ExaAnswerProvider());
+		this.providers.set('brave_answer', new BraveAnswerProvider());
+		this.providers.set('tavily_answer', new TavilyAnswerProvider());
+		this.providers.set('you_search', new YouSearchProvider());
+		this.providers.set('serpapi_answer', new SerpApiAnswerProvider());
+		this.providers.set('gemini', new GeminiProvider());
 	}
 
 	async search(

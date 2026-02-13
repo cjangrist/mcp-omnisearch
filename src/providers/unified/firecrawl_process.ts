@@ -27,9 +27,7 @@ export interface UnifiedFirecrawlProcessingProvider {
 	): Promise<ProcessingResult>;
 }
 
-export class UnifiedFirecrawlProvider
-	implements UnifiedFirecrawlProcessingProvider
-{
+export class UnifiedFirecrawlProvider implements UnifiedFirecrawlProcessingProvider {
 	name = 'firecrawl_process';
 	description =
 		'Extract web content with Firecrawl. Modes: scrape (single page), crawl (deep crawl), map (URL discovery), extract (structured data), actions (interactive).';

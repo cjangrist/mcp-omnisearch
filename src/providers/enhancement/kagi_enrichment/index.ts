@@ -8,7 +8,6 @@ import {
 import {
 	handle_provider_error,
 	retry_with_backoff,
-	sanitize_query,
 	validate_api_key,
 } from '../../../common/utils.js';
 import { config } from '../../../config/env.js';
@@ -45,9 +44,7 @@ export class KagiEnrichmentProvider implements EnhancementProvider {
 						this.name,
 						`https://kagi.com/api/v0/enrich/web?${new URLSearchParams(
 							{
-								q: sanitize_query(
-									'artificial intelligence software development',
-								),
+								q: 'artificial intelligence software development',
 								limit: '5',
 							},
 						)}`,
@@ -66,9 +63,7 @@ export class KagiEnrichmentProvider implements EnhancementProvider {
 						this.name,
 						`https://kagi.com/api/v0/enrich/news?${new URLSearchParams(
 							{
-								q: sanitize_query(
-									'artificial intelligence code generation testing',
-								),
+								q: 'artificial intelligence code generation testing',
 								limit: '5',
 							},
 						)}`,

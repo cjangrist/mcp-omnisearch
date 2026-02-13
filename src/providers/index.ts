@@ -27,7 +27,14 @@ export const initialize_providers = () => {
 		is_api_key_valid(config.search.tavily.api_key, 'tavily') ||
 		is_api_key_valid(config.search.brave.api_key, 'brave') ||
 		is_api_key_valid(config.search.kagi.api_key, 'kagi') ||
-		is_api_key_valid(config.search.exa.api_key, 'exa');
+		is_api_key_valid(config.search.exa.api_key, 'exa') ||
+		is_api_key_valid(config.search.firecrawl.api_key, 'firecrawl') ||
+		is_api_key_valid(
+			config.search.perplexity.api_key,
+			'perplexity',
+		) ||
+		is_api_key_valid(config.search.serpapi.api_key, 'serpapi') ||
+		is_api_key_valid(config.search.linkup.api_key, 'linkup');
 
 	if (has_web_search) {
 		register_web_search_provider(new UnifiedWebSearchProvider());
@@ -53,7 +60,24 @@ export const initialize_providers = () => {
 		is_api_key_valid(
 			config.ai_response.exa_answer.api_key,
 			'exa_answer',
-		);
+		) ||
+		is_api_key_valid(
+			config.ai_response.brave_answer.api_key,
+			'brave_answer',
+		) ||
+		is_api_key_valid(
+			config.ai_response.tavily_answer.api_key,
+			'tavily_answer',
+		) ||
+		is_api_key_valid(
+			config.ai_response.you_search.api_key,
+			'you_search',
+		) ||
+		is_api_key_valid(
+			config.ai_response.serpapi_answer.api_key,
+			'serpapi_answer',
+		) ||
+		is_api_key_valid(config.ai_response.gemini.api_key, 'gemini');
 
 	if (has_ai_search) {
 		register_ai_search_provider(new UnifiedAISearchProvider());

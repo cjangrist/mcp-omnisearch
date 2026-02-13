@@ -4,8 +4,23 @@ import {
 	SearchProvider,
 	SearchResult,
 } from '../../../common/types.js';
-import { validate_api_key } from '../../../common/utils.js';
+import {
+	handle_provider_error,
+	validate_api_key,
+} from '../../../common/utils.js';
 import { config } from '../../../config/env.js';
+
+interface PerplexityAPIResponse {
+	choices?: Array<{
+		message?: {
+			content?: string;
+		};
+	}>;
+	citations?: string[];
+	usage?: {
+		total_tokens?: number;
+	};
+}
 
 export interface PerplexityResponse {
 	answer: string;
@@ -108,7 +123,7 @@ export class PerplexityProvider implements SearchProvider {
 		const final_options = { ...default_options, ...options };
 
 		try {
-			const data = await http_json<any>(
+			const data = await http_json<PerplexityAPIResponse>(
 				this.name,
 				`${config.ai_response.perplexity.base_url}/chat/completions`,
 				{
@@ -161,11 +176,11 @@ export class PerplexityProvider implements SearchProvider {
 					token_count: data.usage?.total_tokens || 0,
 				},
 			};
-		} catch (error: unknown) {
-			const error_message =
-				error instanceof Error ? error.message : String(error);
-			throw new Error(
-				`Failed to get Perplexity answer: ${error_message}`,
+		} catch (error) {
+			handle_provider_error(
+				error,
+				this.name,
+				'fetch Perplexity answer',
 			);
 		}
 	}
@@ -193,7 +208,7 @@ export class PerplexityProvider implements SearchProvider {
 		const final_options = { ...default_options, ...options };
 
 		try {
-			const data = await http_json<any>(
+			const data = await http_json<PerplexityAPIResponse>(
 				this.name,
 				`${config.ai_response.perplexity.base_url}/chat/completions`,
 				{
@@ -227,6 +242,12 @@ export class PerplexityProvider implements SearchProvider {
 					),
 				},
 			);
+			if (!data.choices?.[0]?.message?.content) {
+				throw new Error(
+					'Invalid response format from Perplexity API',
+				);
+			}
+
 			const answer = data.choices[0].message.content;
 			const citations = data.citations || [];
 
@@ -246,11 +267,11 @@ export class PerplexityProvider implements SearchProvider {
 					token_count: data.usage?.total_tokens || 0,
 				},
 			};
-		} catch (error: unknown) {
-			const error_message =
-				error instanceof Error ? error.message : String(error);
-			throw new Error(
-				`Failed to get Perplexity answer with context: ${error_message}`,
+		} catch (error) {
+			handle_provider_error(
+				error,
+				this.name,
+				'fetch Perplexity answer with context',
 			);
 		}
 	}

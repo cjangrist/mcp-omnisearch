@@ -8,8 +8,6 @@ import {
 	apply_search_operators,
 	handle_provider_error,
 	parse_search_operators,
-	retry_with_backoff,
-	sanitize_query,
 	validate_api_key,
 } from '../../../common/utils.js';
 import { config } from '../../../config/env.js';
@@ -39,45 +37,37 @@ export class TavilySearchProvider implements SearchProvider {
 		const parsed_query = parse_search_operators(params.query);
 		const search_params = apply_search_operators(parsed_query);
 
-		const search_request = async () => {
-			try {
-				// Only use officially supported parameters
-				const request_body: Record<string, any> = {
-					query: sanitize_query(params.query), // Use original query without operators
-					max_results: params.limit ?? 5,
-					include_domains: params.include_domains ?? [],
-					exclude_domains: params.exclude_domains ?? [],
-					search_depth: 'basic',
-					topic: 'general',
-				};
+		try {
+			// Only use officially supported parameters
+			const request_body: Record<string, unknown> = {
+				query: params.query, // Use original query without operators
+				max_results: params.limit ?? 5,
+				include_domains: params.include_domains ?? [],
+				exclude_domains: params.exclude_domains ?? [],
+				search_depth: 'basic',
+				topic: 'general',
+			};
 
-				const data = await http_json<
-					TavilySearchResponse & { message?: string }
-				>(this.name, `${config.search.tavily.base_url}/search`, {
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${api_key}`,
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(request_body),
-				});
+			const data = await http_json<
+				TavilySearchResponse & { message?: string }
+			>(this.name, `${config.search.tavily.base_url}/search`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${api_key}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(request_body),
+			});
 
-				return (data.results || []).map((result) => ({
-					title: result.title,
-					url: result.url,
-					snippet: result.content,
-					score: result.score,
-					source_provider: this.name,
-				}));
-			} catch (error) {
-				handle_provider_error(
-					error,
-					this.name,
-					'fetch search results',
-				);
-			}
-		};
-
-		return retry_with_backoff(search_request);
+			return (data.results || []).map((result) => ({
+				title: result.title,
+				url: result.url,
+				snippet: result.content,
+				score: result.score,
+				source_provider: this.name,
+			}));
+		} catch (error) {
+			handle_provider_error(error, this.name, 'fetch search results');
+		}
 	}
 }

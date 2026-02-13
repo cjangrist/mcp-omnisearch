@@ -6,7 +6,7 @@ export interface SearchResult {
 	snippet: string;
 	score?: number;
 	source_provider: string;
-	metadata?: Record<string, any>;
+	metadata?: Record<string, unknown>;
 }
 
 export interface BaseSearchParams {
@@ -84,7 +84,7 @@ export class ProviderError extends Error {
 		public type: ErrorType,
 		message: string,
 		public provider: string,
-		public details?: any,
+		public details?: unknown,
 	) {
 		super(message);
 		this.name = 'ProviderError';

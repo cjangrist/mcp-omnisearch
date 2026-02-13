@@ -9,7 +9,6 @@ import {
 	build_query_with_operators,
 	handle_provider_error,
 	parse_search_operators,
-	retry_with_backoff,
 	validate_api_key,
 } from '../../../common/utils.js';
 import { config } from '../../../config/env.js';
@@ -39,50 +38,42 @@ export class BraveSearchProvider implements SearchProvider {
 		const parsed_query = parse_search_operators(params.query);
 		const search_params = apply_search_operators(parsed_query);
 
-		const search_request = async () => {
-			try {
-				// Build query with all operators using shared utility
-				const query = build_query_with_operators(
-					search_params,
-					params.include_domains,
-					params.exclude_domains,
-				);
+		try {
+			// Build query with all operators using shared utility
+			const query = build_query_with_operators(
+				search_params,
+				params.include_domains,
+				params.exclude_domains,
+			);
 
-				const query_params = new URLSearchParams({
-					q: query,
-					count: (params.limit ?? 10).toString(),
-				});
+			const query_params = new URLSearchParams({
+				q: query,
+				count: (params.limit ?? 10).toString(),
+			});
 
-				const data = await http_json<
-					BraveSearchResponse & { message?: string }
-				>(
-					this.name,
-					`${config.search.brave.base_url}/web/search?${query_params}`,
-					{
-						method: 'GET',
-						headers: {
-							Accept: 'application/json',
-							'X-Subscription-Token': api_key,
-						},
-						signal: AbortSignal.timeout(config.search.brave.timeout),
+			const data = await http_json<
+				BraveSearchResponse & { message?: string }
+			>(
+				this.name,
+				`${config.search.brave.base_url}/web/search?${query_params}`,
+				{
+					method: 'GET',
+					headers: {
+						Accept: 'application/json',
+						'X-Subscription-Token': api_key,
 					},
-				);
+					signal: AbortSignal.timeout(config.search.brave.timeout),
+				},
+			);
 
-				return (data.web?.results || []).map((result) => ({
-					title: result.title,
-					url: result.url,
-					snippet: result.description,
-					source_provider: this.name,
-				}));
-			} catch (error) {
-				handle_provider_error(
-					error,
-					this.name,
-					'fetch search results',
-				);
-			}
-		};
-
-		return retry_with_backoff(search_request);
+			return (data.web?.results || []).map((result) => ({
+				title: result.title,
+				url: result.url,
+				snippet: result.description,
+				source_provider: this.name,
+			}));
+		} catch (error) {
+			handle_provider_error(error, this.name, 'fetch search results');
+		}
 	}
 }
